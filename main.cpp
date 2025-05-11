@@ -1,89 +1,38 @@
 ﻿#include <iostream>
-
+#include <memory>
 using namespace std;
 
-class Operation {
+class MathOperation {
+protected:
+    static int totalOperations;
 public:
-    virtual double execute(double a, double b) = 0;
+    virtual ~MathOperation() = default;
+    virtual double compute(double a, double b) = 0;
+
+    static int getTotalOperations() {
+        return totalOperations;
+    }
+};
+int MathOperation::totalOperations = 0;
+
+class BinaryOperation : public MathOperation {
+public:
+    double execute(double a, double b) {
+        totalOperations++;
+        return compute(a, b);
+    }
 };
 
-class Addition : public Operation {
+class Addition : public BinaryOperation {
 public:
-    double execute(double a, double b) override {
+    double compute(double a, double b) override {
         return a + b;
     }
 };
 
-class Subtraction : public Operation {
-public:
-    double execute(double a, double b) override {
-        return a - b;
-    }
-};
-
-class Multiplication : public Operation {
-public:
-    double execute(double a, double b) override {
-        return a * b;
-    }
-};
-
-class Division : public Operation {
-public:
-    double execute(double a, double b) override {
-        if (b == 0) {
-            throw invalid_argument("Error: division by zero!");
-        }
-        return a / b;
-    }
-};
-
-class Calculator {
-private:
-    Operation* operation;
-
-public:
-    void setOperation(Operation* op) {
-        operation = op;
-    }
-
-    double calculate(double a, double b) {
-        return operation->execute(a, b);
-    }
-};
-
-class Power : public Operation {
-public:
-    double execute(double a, double b) override {
-        return pow(a, b);
-    }
-};
-
 int main() {
-    Calculator calc;
-    Addition add;
-    Subtraction sub;
-    Multiplication mul;
-    Division div;
-    Power pow;
-
-    double a = 10;
-    double b = 5;
-
-    calc.setOperation(&add);
-    cout << "Addition: " << calc.calculate(a, b) << endl;
-
-    calc.setOperation(&sub);
-    cout << "Subtraction: " << calc.calculate(a, b) << endl;
-
-    calc.setOperation(&mul);
-    cout << "Multiplication: " << calc.calculate(a, b) << endl;
-
-    calc.setOperation(&div);
-    cout << "Division: " << calc.calculate(a, b) << endl;
-
-    calc.setOperation(&pow);
-    cout << "Power: " << calc.calculate(a, b) << endl;
-
+    unique_ptr<MathOperation> op = make_unique<Addition>();
+    cout << "10 + 5 = " << static_cast<BinaryOperation*>(op.get())->execute(10, 5) << endl;
+    cout << "Total operations: " << MathOperation::getTotalOperations() << endl;
     return 0;
 }
