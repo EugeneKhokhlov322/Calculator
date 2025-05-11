@@ -1,89 +1,61 @@
 ﻿#include <iostream>
-
+#include <memory>
+#include <stdexcept>
 using namespace std;
 
 class Operation {
 public:
-    virtual double execute(double a, double b) = 0;
+    virtual ~Operation() = default;
+    virtual double execute(double a, double b) {
+        validate(a, b);
+        return compute(a, b);
+    }
+
+protected:
+    virtual double compute(double a, double b) = 0;
+    virtual void validate(double a, double b) {}
 };
 
 class Addition : public Operation {
-public:
-    double execute(double a, double b) override {
+protected:
+    double compute(double a, double b) override {
         return a + b;
     }
 };
 
-class Subtraction : public Operation {
-public:
-    double execute(double a, double b) override {
-        return a - b;
-    }
-};
-
-class Multiplication : public Operation {
-public:
-    double execute(double a, double b) override {
-        return a * b;
-    }
-};
-
 class Division : public Operation {
-public:
-    double execute(double a, double b) override {
-        if (b == 0) {
-            throw invalid_argument("Error: division by zero!");
-        }
+protected:
+    double compute(double a, double b) override {
         return a / b;
     }
-};
 
-class Calculator {
-private:
-    Operation* operation;
-
-public:
-    void setOperation(Operation* op) {
-        operation = op;
-    }
-
-    double calculate(double a, double b) {
-        return operation->execute(a, b);
+    void validate(double a, double b) override {
+        if (b == 0) throw invalid_argument("Division by zero");
     }
 };
 
-class Power : public Operation {
+class OperationFactory {
 public:
-    double execute(double a, double b) override {
-        return pow(a, b);
+    static unique_ptr<Operation> create(char op) {
+        switch (op) {
+        case '+': return make_unique<Addition>();
+        case '/': return make_unique<Division>();
+        default: throw invalid_argument("Unknown operation");
+        }
     }
 };
 
 int main() {
-    Calculator calc;
-    Addition add;
-    Subtraction sub;
-    Multiplication mul;
-    Division div;
-    Power pow;
+    auto op = OperationFactory::create('+');
+    cout << "10 + 5 = " << op->execute(10, 5) << endl;
 
-    double a = 10;
-    double b = 5;
-
-    calc.setOperation(&add);
-    cout << "Addition: " << calc.calculate(a, b) << endl;
-
-    calc.setOperation(&sub);
-    cout << "Subtraction: " << calc.calculate(a, b) << endl;
-
-    calc.setOperation(&mul);
-    cout << "Multiplication: " << calc.calculate(a, b) << endl;
-
-    calc.setOperation(&div);
-    cout << "Division: " << calc.calculate(a, b) << endl;
-
-    calc.setOperation(&pow);
-    cout << "Power: " << calc.calculate(a, b) << endl;
-
+    op = OperationFactory::create('/');
+    try {
+        cout << "10 / 2 = " << op->execute(10, 2) << endl;
+        cout << "10 / 0 = " << op->execute(10, 0) << endl;
+    }
+    catch (const exception& e) {
+        cerr << "Error: " << e.what() << endl;
+    }
     return 0;
 }
